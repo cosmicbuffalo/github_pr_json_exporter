@@ -1,14 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>GitHub PR JSON Exporter</title>
+  <link rel="stylesheet" href="popup.css">
 </head>
+
 <body>
-  <input type="password" id="pat-input" placeholder="Enter GitHub Token" />
-  <button id="save-token-btn">Save Token</button>
-  <button id="download-btn">Download PR JSON</button>
+  <div class="container">
+    <div class="header">
+      <img src="icons/icon.svg" alt="Extension Icon" id="popup-icon">
+      <h1>PR JSON Export</h1>
+    </div>
+    <h2>GitHub Token Setup</h2>
+    <div id="token-status">
+      <p id="token-info">Checking for saved token...</p>
+    </div>
+
+    <input type="password" id="token-input" placeholder="GitHub Token" />
+
+    <button id="save-token-btn">Save Token</button>
+    <button id="reset-token-btn" style="display: none;">Reset Token</button>
+
+    <p id="status-msg"></p>
+
+    <p class="help-text">
+      Need a token? <a href="https://github.com/settings/tokens" target="_blank">Generate one here</a>.
+    </p>
+  </div>
 
   <script src="popup.js"></script>
 </body>
+
 </html>

@@ -10,8 +10,12 @@
   ],
   "content_scripts": [
     {
-      "matches": [ "https://github.com/*/*/pull/*" ],
-      "js": [ "content.js" ]
+      "matches": [
+        "https://github.com/*/*/pull/*"
+      ],
+      "js": [
+        "content.js"
+      ]
     }
   ],
   "host_permissions": [
@@ -20,9 +24,9 @@
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "icons/icon.png",
-      "48": "icons/icon.png",
-      "128": "icons/icon.png"
+      "16": "icons/icon_18.png",
+      "48": "icons/icon_48.png",
+      "128": "icons/icon_512.png"
     }
   },
   "background": {

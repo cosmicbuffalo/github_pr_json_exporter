@@ -1,107 +1,106 @@
-async function fetchWithAuth(url, token) {
-  return fetch(url, {
-    headers: {
-      Authorization: `token ${token}`,
-      Accept: "application/vnd.github.v3+json",
-    },
-  });
-}
+function insertDownloadButton() {
+  const editButtonSelector = ".gh-header-actions > button.js-details-target";
+  const buttonContainer =
+    document.querySelector(editButtonSelector).parentElement;
 
-// Helper function to fetch all paginated data
-async function fetchAllPages(url, token) {
-  let page = 1;
-  const perPage = 100;  // GitHub's max per page
-  let results = [];
-  let hasMore = true;
+  if (buttonContainer && !document.getElementById("export-pr-json-btn")) {
+    const downloadButton = document.createElement("button");
+    downloadButton.id = "export-pr-json-btn";
+    downloadButton.textContent = "JSON Export";
+    downloadButton.className = "btn btn-sm flex-md-order-2";
 
-  while (hasMore) {
-    const pagedUrl = `${url}?per_page=${perPage}&page=${page}`;
-    const response = await fetchWithAuth(pagedUrl, token);
+    downloadButton.onclick = handleDownloadClick;
 
-    if (!response.ok) {
-      throw new Error(`GitHub API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    results = results.concat(data);
-
-    // If less than 100 items are returned, we've reached the last page
-    hasMore = data.length === perPage;
-    page++;
+    buttonContainer.insertBefore(downloadButton, buttonContainer.children[2]);
   }
-
-  return results;
 }
 
-(async function () {
+function openPopupMessage(message) {
+  alert(message + "\nClick the extension icon to open the setup.");
+}
+
+function setButtonLoadingState(isLoading) {
+  const downloadButton = document.getElementById("export-pr-json-btn");
+  if (downloadButton) {
+    if (isLoading) {
+      downloadButton.disabled = true;
+      downloadButton.style.cursor = "wait";
+      downloadButton.classList.add("disabled");
+    } else {
+      console.log("download complete")
+      setTimeout(() => {
+        downloadButton.disabled = false;
+        downloadButton.style.cursor = "pointer";
+        downloadButton.classList.remove("disabled");
+      }, 1000);
+    }
+  }
+}
+
+async function handleDownloadClick() {
   chrome.storage.local.get(["githubToken"], async (result) => {
     const token = result.githubToken;
 
     if (!token) {
-      alert("Please enter your GitHub Token in the extension popup.");
+      openPopupMessage("Please enter your GitHub Token.");
       return;
     }
 
-    const prUrlMatch = window.location.href.match(
-      /github\.com\/(.+?)\/(.+?)\/pull\/(\d+)/
-    );
-    if (!prUrlMatch) {
-      alert("Not a valid PR page.");
+    const isValid = await validateToken(token);
+    if (!isValid) {
+      openPopupMessage("Your GitHub token is invalid or expired. Please update it.");
       return;
     }
 
-    const [_, owner, repo, prNumber] = prUrlMatch;
+    setButtonLoadingState(true);
 
-    // API Endpoints
-    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}`;
-    const filesUrl = `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/files`;
-    const commitsUrl = `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/commits`;
-    const reviewCommentsUrl = `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/comments`;
-    const prReviewsUrl = `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/reviews`;
-
-    try {
-      // Fetch all paginated data concurrently
-      const [prRes, filesData, commitsData, reviewCommentsData, prReviewsData] = await Promise.all([
-        fetchWithAuth(apiUrl, token),
-        fetchAllPages(filesUrl, token),
-        fetchAllPages(commitsUrl, token),
-        fetchAllPages(reviewCommentsUrl, token),
-        fetchAllPages(prReviewsUrl, token),
-      ]);
-
-      if (!prRes.ok) {
-        throw new Error(`GitHub API error: ${prRes.status}`);
-      }
-
-      const prData = await prRes.json();
-
-      // Combine all data
-      const fullPRData = {
-        ...prData,
-        files: filesData,
-        commits: commitsData,
-        review_comments: reviewCommentsData,
-        pr_reviews: prReviewsData,
-      };
-
-      // Send data to background script for download
-      chrome.runtime.sendMessage(
-        {
-          type: "download",
-          data: fullPRData,
-          filename: `PR-${prNumber}.json`,
-        },
-        (response) => {
-          if (chrome.runtime.lastError) {
-            console.error("Message failed:", chrome.runtime.lastError.message);
-          } else {
-            console.log("Download message sent successfully.");
-          }
+    chrome.runtime.sendMessage(
+      { type: "startDownload", token: token },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          console.error(
+            "Error starting download:",
+            chrome.runtime.lastError.message,
+          );
+        } else {
+          console.log("Download initiated.");
         }
-      );
-    } catch (error) {
-      console.error("Error fetching PR data:", error);
-      alert("Failed to fetch PR data. Check your token and permissions.");
-    }
+      },
+    );
   });
-})();
+}
+
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.type === "downloadComplete") {
+    setButtonLoadingState(false);
+  }
+});
+
+async function validateToken(token) {
+  const response = await fetch("https://api.github.com/user", {
+    headers: {
+      Authorization: `token ${token}`,
+    },
+  });
+  return response.ok;
+}
+
+function triggerPRDownload(token) {
+  chrome.runtime.sendMessage(
+    { type: "startDownload", token: token },
+    (response) => {
+      if (chrome.runtime.lastError) {
+        console.error(
+          "Error starting download:",
+          chrome.runtime.lastError.message,
+        );
+      } else {
+        console.log("Download initiated.");
+      }
+    },
+  );
+}
+
+window.addEventListener("load", insertDownloadButton);
+
+document.addEventListener("pjax:end", insertDownloadButton);
