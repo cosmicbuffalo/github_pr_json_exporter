@@ -1,7 +1,7 @@
 function insertDownloadButton() {
-  const editButtonSelector = ".gh-header-actions > button.js-details-target";
+  const buttonContainerSelector = ".gh-header-actions";
   const buttonContainer =
-    document.querySelector(editButtonSelector).parentElement;
+    document.querySelector(buttonContainerSelector);
 
   if (buttonContainer && !document.getElementById("export-pr-json-btn")) {
     const downloadButton = document.createElement("button");
@@ -11,7 +11,7 @@ function insertDownloadButton() {
 
     downloadButton.onclick = handleDownloadClick;
 
-    buttonContainer.insertBefore(downloadButton, buttonContainer.children[2]);
+    buttonContainer.appendChild(downloadButton);
   }
 }
 
