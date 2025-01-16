@@ -12,6 +12,8 @@ A Chrome extension that allows you to download the full JSON payload of a GitHub
 
 ## 🔧 Installation
 
+Add to chrome via the chrome web store here: https://chromewebstore.google.com/detail/github-pr-json-exporter/nbebpfadbldclclelfkkmgpdnlkbecfd or follow the steps below to install via source.
+
 1.	Clone the Repository
 ```
 git clone https://github.com/cosmicbuffalo/github_pr_json_exporter.git
